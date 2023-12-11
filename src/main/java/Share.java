@@ -10,4 +10,21 @@ public class Share {
         this.dateTime = dateTime;
         this.number = number;
     }
+
+    @Override
+    public String toString(){
+        return email+"|"+dateTime.toString().replace(":","-").substring(0,16)+"|"+number;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getDateTime() {
+        return dateTime.toString().substring(0, 16).replace(":","-");
+    }
+
+    public String getNumber() {
+        return String.valueOf(number);
+    }
 }

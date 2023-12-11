@@ -8,6 +8,7 @@ import spark.Response;
 import spark.Spark;
 
 import java.io.*;
+import java.security.GeneralSecurityException;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -18,11 +19,13 @@ public class Server {
     private String path;
     private Integer port;
     private int pool = 0;
+    private Gmailer gmailer;
 
-    public Server(Integer port, String path, int pool) {
+    public Server(Integer port, String path, int pool, Gmailer gmailer) {
         this.path = path;
         this.port = port;
         this.pool = pool;
+        this.gmailer = gmailer;
         this.start();
     }
 
@@ -31,14 +34,14 @@ public class Server {
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                if (LocalDateTime.now().getMinute()==11) {
-                    System.out.println("Ahora");
-                    String now = LocalDateTime.now().withMinute(30).toString();
+                if (LocalDateTime.now().getMinute()==41) {
+                    //System.out.println("Ahora");
+                    //String now = LocalDateTime.now().withMinute(30).toString();
+                    String now = LocalDateTime.now().withHour(10).withMinute(30).toString();
                     try {
-                        System.out.println(lottery(now));
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    } catch (CsvValidationException e) {
+                        //System.out.println(lottery(now));
+                        System.out.println("Hola");
+                    } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 }
@@ -46,7 +49,7 @@ public class Server {
         }, 0, 60000);
         Spark.port(port);
         // Operations for the API
-        post("v1/lottery/registration", this::accept);
+        post("v1/lottery/play", this::accept);
         get("v1/lottery/winners", this::getHistoric);
     }
 
@@ -69,38 +72,39 @@ public class Server {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        return null;
     }
 
     private String accept(Request req, Response res) throws IOException, CsvValidationException {
         Share share = new Gson().fromJson(req.body(), Share.class);
-        String fileName = share.replace(":", "-") + ".csv";
+        String fileName = share.getDateTime() + ".csv";
         File file = new File(this.path, fileName);
         if (file.createNewFile()){
             BufferedWriter writer = new BufferedWriter(new FileWriter(file, true));
-            writer.write(parts[0] + "|" + parts[2] + ",");
+            writer.write(share.getEmail()+"|"+share.getNumber()+",");
             writer.close();
         }
         else {
-            String path = this.path+"/"+parts[1].replace(":","-")+".csv";
+            String path = this.path+"/"+share.getDateTime()+".csv";
             CSVReader reader = new CSVReader(new FileReader(path));
             String[] shares;
             while ((shares=reader.readNext()) != null) {
-                for (String share : shares) {
+                for (String one_share : shares) {
                     System.out.println(share);
-                    String[] parts_share = share.split("\\|");
-                    if (parts_share[0].equals(parts[0]) && parts_share[1].equals(parts[2]))
+                    String[] parts_share = one_share.split("\\|");
+                    if (parts_share[0].equals(share.getEmail()) && parts_share[1].equals(share.getNumber()))
                         return "You can't play twice with the same number";
                 }
             }
             BufferedWriter writer = new BufferedWriter(new FileWriter(file, true));
-            writer.write(parts[0] + "|" + parts[2] + ",");
+            writer.write(share.getEmail() + "|" + share.getNumber() + ",");
             writer.close();
         }
         pool += 100;
-        return "Thank you for participating: " + req;
+        return "Thank you for participating: " + share.toString();
     }
 
-    private String lottery(String now) throws IOException, CsvValidationException {
+    private String lottery(String now) throws Exception {
         List<String> winners = new ArrayList<>();
         Integer winner_num = new Random().nextInt(256);
         String path_participants = this.path+"/" + now.replace(":","-").substring(0,16) + ".csv";
@@ -109,7 +113,6 @@ public class Server {
             String[] shares;
             while ((shares = reader.readNext()) != null) {
                 for (String share : shares) {
-                    System.out.println(share);
                     String[] parts_share = share.split("\\|");
                     if (parts_share.length == 2) {
                         if (Integer.parseInt(parts_share[1]) == winner_num)
@@ -119,18 +122,22 @@ public class Server {
             }
             reader.close();
             new File(path_participants).delete();
-            System.out.println(path_participants);
             if (winners.size() == 0) return "Number: " + winner_num + ". No winners";
             else {
+                String subject = "Congratulations!";
+                String message = "";
                 int ppw = pool / winners.size();
                 File file = new File(this.path + "/winners.csv");
                 BufferedWriter writer = new BufferedWriter(new FileWriter(file, true));
                 for (String winner : winners) {
                     writer.write(now.substring(0, 16) + "|" + winner + "|" + ppw + ",");
+                    message = "Congratulations " + winner + ". You have won " + ppw + " SEK with number " + winner_num
+                    + ". Thank you for participating.\nBest regards,\nLottery365";
+                    gmailer.sendMail(winner, subject, message);
                 }
                 writer.close();
                 pool = 0;
-                return "The winner number is " + winner_num + ". The winners are" + winners.toString() + ". Each one won:" + ppw;
+                return "The winner number is " + winner_num + ". The winners are" + winners.toString() + ". Each one won: " + ppw;
             }
         } catch (FileNotFoundException ie){
             return "No participants";
@@ -143,9 +150,10 @@ public class Server {
 
     public void stop(){Spark.stop();}
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, GeneralSecurityException {
+        Gmailer gmailer = new Gmailer();
         List<Integer> servers = new ArrayList<>();
         servers.add(4568);servers.add(4569);
-        Server server = new Server(4567, "files", 200);
+        Server server = new Server(4567, "files", 400, gmailer);
     }
 }

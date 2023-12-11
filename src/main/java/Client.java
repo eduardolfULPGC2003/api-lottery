@@ -60,7 +60,7 @@ public class Client {
     }
 
     private String request(String body) throws IOException {
-        String json = Jsoup.connect("http://localhost:"+port+"/v1/lottery/register")
+        String json = Jsoup.connect("http://localhost:"+port+"/v1/lottery/play")
                 .validateTLSCertificates(false)
                 .timeout(60000)
                 .ignoreContentType(true)
@@ -71,7 +71,7 @@ public class Client {
     }
 
     private String request() throws IOException {
-        String json = Jsoup.connect("http://localhost:"+port+"/v1/lottery/historic")
+        String json = Jsoup.connect("http://localhost:"+port+"/v1/lottery/winners")
                 .validateTLSCertificates(false)
                 .timeout(60000)
                 .ignoreContentType(true)
