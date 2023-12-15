@@ -34,13 +34,11 @@ public class Server {
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                if (LocalDateTime.now().getMinute()==41) {
-                    //System.out.println("Ahora");
-                    //String now = LocalDateTime.now().withMinute(30).toString();
-                    String now = LocalDateTime.now().withHour(10).withMinute(30).toString();
+                if (LocalDateTime.now().getMinute()==30) {
+                    String now = LocalDateTime.now().withMinute(30).toString();
                     try {
-                        //System.out.println(lottery(now));
-                        System.out.println("Hola");
+                        System.out.println(lottery(now));
+                        //System.out.println("Hola");
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }

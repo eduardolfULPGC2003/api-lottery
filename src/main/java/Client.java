@@ -42,11 +42,11 @@ public class Client {
 
     private LocalDateTime getDate(){
         Scanner scanner = new Scanner(System.in);
-        System.out.println("When do you want to play? (Introduce de number in the format DD/MM/YY)");
+        System.out.println("When do you want to play? (Introduce de date within the format DD/MM/YY)");
         String date = scanner.nextLine();
         try{
             LocalDate parsedDate = LocalDate.parse(date, DateTimeFormatter.ofPattern("dd/MM/yy"));
-            System.out.println("Now introduce de time in the format: HH:MM (Note that we play every hour at :30)");
+            System.out.println("Now introduce de time within the format: HH:MM (Note that we play every hour at :30)");
             String time = scanner.nextLine();
             LocalTime parsedTime = LocalTime.parse(time, DateTimeFormatter.ofPattern("HH:mm")).withMinute(30);
             LocalDateTime dateTime = parsedDate.atTime(parsedTime);
